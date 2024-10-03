@@ -1,20 +1,14 @@
 import numpy as np
-from nilearn import datasets
-from nilearn.input_data import NiftiLabelsMasker
 import nibabel as nib
-from skimage.measure import label, regionprops
-from nilearn import image, datasets, input_data
+from nilearn import datasets
 from scipy import signal
-import matplotlib.pyplot as plt #library to view images
-from skimage.measure import label, regionprops
-from skimage.filters import rank, gaussian
-from scipy import ndimage as ndi
+from skimage.measure import label
 import pydicom
 import os
-# from skimage.morphology import watershed, disk
-from skimage import exposure
-import csv
 import pandas as pd
+from scipy.spatial.distance import pdist, squareform
+from scipy.ndimage import zoom
+from scipy.stats import pearsonr
 
 def data_load(dcm_folder):
     dicoms_data = []
@@ -64,10 +58,9 @@ def calculate_voxelwise_sfnr(time_series):
 def calculate_voxelwise_snr(time_series):
     mean_signal = np.mean(time_series, axis=0)
     std_signal = np.std(time_series, axis=0)
-    snr =  mean_signal / std_signal
-    finite_mask = np.isfinite(snr)
-    filtered_snr = snr[finite_mask]
-    return filtered_snr
+    non_zero_std_indices = std_signal != 0
+    snr = mean_signal[non_zero_std_indices] / std_signal[non_zero_std_indices]
+    return snr
 
 def calculate_fwhm(x, y):
     half_max = max(y) / 2.0
@@ -103,21 +96,46 @@ def calculate_perAF(signal):
     perAF = 100 * np.std(signal) / mean_signal
     return perAF
 
-def calculate_rdc(time_series):
-    correlation_matrix = np.corrcoef(time_series)
-    threshold = 0.5
-    above_threshold = np.where(correlation_matrix > threshold)
-    voxel_positions = np.array([(i % 10, i // 10) for i in range(correlation_matrix.shape[0])])
-    distances = []
-    for i, j in zip(*above_threshold):
-        if i != j:
-            distance = np.linalg.norm(voxel_positions[i] - voxel_positions[j])
-            distances.append(distance)
-    if distances:
-        decorrelation_radius = np.mean(distances)
-        return decorrelation_radius
-    else:
-        print('No correlations greater than the threshold were found.')
+def correlate_fft(x, y):
+    # 基于傅立叶变换计算两个信号的相关性系数
+    fx = np.fft.fft(x)
+    fy = np.fft.fft(y)
+    fxy = fx * np.conj(fy)
+    corr = np.fft.ifft(fxy)
+    corr = np.real(corr) / np.sqrt(np.sum(x**2) * np.sum(y**2))
+    return corr
+
+def calculate_rdc(data):
+    radius_of_decorrelation = []
+    # 遍历时间维度
+    for i in range(data.shape[1]):
+        print("time_i:", i)
+        # 获取3D图像
+        image = data[:, i, :, :]
+        corr_threshhold = 0.1 #判断信号不相关的阈值
+        target_size = 5 #对image进行粗粒化,比如这里粗粒化成像素为10
+        zoom_factor = target_size / data.shape[2]
+        downsampled_image = zoom(image, (1, zoom_factor, zoom_factor))
+        # 计算每对体素之间的空间距离
+        spatial_distances = squareform(pdist(np.indices((target_size, target_size)).reshape(2, -1).T))
+        correlations = []
+        # 遍历每对体素
+        for j in range(target_size * target_size):
+            for k in range(j + 1, target_size * target_size):
+                voxel1 = downsampled_image[:, j // target_size, j % target_size]
+                voxel2 = downsampled_image[:, k // target_size, k % target_size]
+                if np.all(voxel1 == 0) or np.all(voxel2 == 0):
+                    correlations.append((j, k, 0, spatial_distances[j, k]))
+                    continue
+                correlation = np.corrcoef(voxel1, voxel2)
+                correlations.append((j, k, correlation[0, 1], spatial_distances[j, k]))
+        correlations = np.array(correlations)
+        correlations = correlations[correlations[:, 3].argsort()]
+        print("correlations:",correlations)
+        radius_of_decorrelation.append(np.interp(corr_threshhold, correlations[:, 2], correlations[:, 3]))
+    average_radius_of_decorrelation = np.mean(radius_of_decorrelation)
+    return average_radius_of_decorrelation
+
 
 def QA_metrics_for_single_subject(subject_data: np.ndarray)-> dict:
     mask_3d = mask_self_defined(subject_data, threshold_scale=1.8)
@@ -131,7 +149,8 @@ def QA_metrics_for_single_subject(subject_data: np.ndarray)-> dict:
     sfnr = np.mean(calculate_voxelwise_sfnr(roi_signal))
     fwhm = calculate_fwhm_4d(subject_data)
     perAF = calculate_perAF(roi_signal)
-    rdc = calculate_rdc(roi_signal)
+    rdc = calculate_rdc(subject_data)
+    # rdc = 0
 
     QA_metrics_dict = {"snr":snr,
                        "sfnr":sfnr,
@@ -146,7 +165,7 @@ def QA_metrics_for_nilearn_data():
     The dataset is an embedded dataset within the Nilearn library, treated as a good dataset.
     """
     output_csv_path = "nilearn_data_QA_metrics.csv"
-    subject_num = 10  # Total 155 subjects to be downloaded.
+    subject_num = 5  # Total 155 subjects to be downloaded.
     data = datasets.fetch_development_fmri(n_subjects=subject_num)
     results = []
     for i in range(subject_num):
