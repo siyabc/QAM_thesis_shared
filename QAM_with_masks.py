@@ -104,19 +104,15 @@ def correlate_fft(x, y):
     corr = np.fft.ifft(fxy)
     corr = np.real(corr) / np.sqrt(np.sum(x**2) * np.sum(y**2))
     return corr
-
 def calculate_rdc(data):
+    corr_threshold = 0.5
     radius_of_decorrelation = []
-    # 遍历时间维度
     for i in range(data.shape[1]):
-        print("time_i:", i)
-        # 获取3D图像
+        # 获取第i个时间点的3D脑部图像
         image = data[:, i, :, :]
-        corr_threshhold = 0.1 #判断信号不相关的阈值
-        target_size = 5 #对image进行粗粒化,比如这里粗粒化成像素为10
+        target_size = 5
         zoom_factor = target_size / data.shape[2]
         downsampled_image = zoom(image, (1, zoom_factor, zoom_factor))
-        # 计算每对体素之间的空间距离
         spatial_distances = squareform(pdist(np.indices((target_size, target_size)).reshape(2, -1).T))
         correlations = []
         # 遍历每对体素
@@ -128,11 +124,28 @@ def calculate_rdc(data):
                     correlations.append((j, k, 0, spatial_distances[j, k]))
                     continue
                 correlation = np.corrcoef(voxel1, voxel2)
-                correlations.append((j, k, correlation[0, 1], spatial_distances[j, k]))
+                correlations.append((j, k, abs(correlation[0, 1]), spatial_distances[j, k]))
         correlations = np.array(correlations)
-        correlations = correlations[correlations[:, 3].argsort()]
-        print("correlations:",correlations)
-        radius_of_decorrelation.append(np.interp(corr_threshhold, correlations[:, 2], correlations[:, 3]))
+        correlations = correlations[correlations[:, 2].argsort(axis=0)]
+
+        '''
+        ## Another method to calculate rdc for each slice
+        # 遍历每个体素点
+        radius_of_decorrelation_slice = []
+        for i in range(downsampled_image.shape[0] * downsampled_image.shape[1]):
+            mask = (correlations[:, 0] == i) | (correlations[:, 1] == i)
+            voxel_correlations = correlations[mask]
+            mask = voxel_correlations[:, 2] < corr_threshold
+            if np.any(mask):
+                min_distance = np.min(voxel_correlations[mask, 3])
+            else:
+                min_distance = np.nan
+            radius_of_decorrelation_slice.append(min_distance)
+        radius_of_decorrelation.append(np.nanmean(radius_of_decorrelation_slice))
+        '''
+
+        # 找到decorrelation半径
+        radius_of_decorrelation.append(np.interp(corr_threshold, correlations[:, 2], correlations[:, 3]))
     average_radius_of_decorrelation = np.mean(radius_of_decorrelation)
     return average_radius_of_decorrelation
 
@@ -165,7 +178,7 @@ def QA_metrics_for_nilearn_data():
     The dataset is an embedded dataset within the Nilearn library, treated as a good dataset.
     """
     output_csv_path = "nilearn_data_QA_metrics.csv"
-    subject_num = 5  # Total 155 subjects to be downloaded.
+    subject_num = 25  # Total 155 subjects to be downloaded.
     data = datasets.fetch_development_fmri(n_subjects=subject_num)
     results = []
     for i in range(subject_num):
@@ -223,6 +236,7 @@ def QA_metrics_for_SV2A_data(root_dir):
 
 
 if __name__ == '__main__':
-    root_dir = 'SV2A-study-partI'
-    QA_metrics_for_SV2A_data(root_dir)
-    # QA_metrics_for_nilearn_data()
+    # root_dir = 'SV2A-study-partI'
+    # QA_metrics_for_SV2A_data(root_dir)
+
+    QA_metrics_for_nilearn_data()
