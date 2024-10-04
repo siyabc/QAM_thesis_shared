@@ -87,8 +87,8 @@ def calculate_fwhm_4d(image_data):
 
 def calculate_perAF(signal):
     mean_signal = np.mean(signal,axis=0)
-    diff= signal-mean_signal.reshape(1,len(mean_signal))
-    perAF = np.mean(diff/mean_signal)
+    diff= abs(signal-mean_signal.reshape(1,len(mean_signal)))
+    perAF = np.mean(diff/mean_signal)*100
     return perAF
 
 def correlate_fft(x, y):
@@ -231,7 +231,7 @@ def QA_metrics_for_SV2A_data(root_dir):
 
 
 if __name__ == '__main__':
-    # root_dir = 'SV2A-study-partI'
-    # QA_metrics_for_SV2A_data(root_dir)
+    root_dir = 'SV2A-study-partI'
+    QA_metrics_for_SV2A_data(root_dir)
 
-    QA_metrics_for_nilearn_data()
+    # QA_metrics_for_nilearn_data()
