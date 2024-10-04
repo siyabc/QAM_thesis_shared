@@ -62,12 +62,6 @@ def calculate_voxelwise_snr(time_series):
     snr = mean_signal[non_zero_std_indices] / std_signal[non_zero_std_indices]
     return snr
 
-def calculate_fwhm(x, y):
-    half_max = max(y) / 2.0
-    left_idx = np.where(y > half_max)[0][0]
-    right_idx = np.where(y > half_max)[0][-1]
-    return x[right_idx] - x[left_idx]
-
 def calculate_fwhm_2d(image):
     max_value = np.max(image)
     half_max = max_value / 2
@@ -92,8 +86,9 @@ def calculate_fwhm_4d(image_data):
     return average_fwhm
 
 def calculate_perAF(signal):
-    mean_signal = np.mean(signal)
-    perAF = 100 * np.std(signal) / mean_signal
+    mean_signal = np.mean(signal,axis=0)
+    diff= signal-mean_signal.reshape(1,len(mean_signal))
+    perAF = np.mean(diff/mean_signal)
     return perAF
 
 def correlate_fft(x, y):

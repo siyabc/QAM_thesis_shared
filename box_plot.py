@@ -15,8 +15,8 @@ def box_plot(csv_path):
 
 
 if __name__ == '__main__':
-    # csv_path = "SV2A-study-partI_QA_metrics.csv"
-    csv_path = "nilearn_data_QA_metrics.csv"
+    csv_path = "SV2A-study-partI_QA_metrics.csv"
+    # csv_path = "nilearn_data_QA_metrics.csv"
     box_plot(csv_path)
 
 
