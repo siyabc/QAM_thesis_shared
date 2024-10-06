@@ -245,10 +245,8 @@ def QA_metrics_for_SV2A_data(root_dir):
     df.to_csv(output_csv_path, mode='w', header= True, index=False)
 
 def fmri_bold_scan():
-    # folder = '/Users/siyac/Documents/_万能班长/_code/QAM_master_thesis/fmri_small'
-    folder = '/Users/siyac/Documents/_万能班长/_code/QAM_master_thesis/fMRI-BOLD-scan'
+    folder = './fMRI-BOLD-scan'
     subject_data = data_load(folder)
-
     QA_metrics_dict = QA_metrics_for_single_subject(subject_data)
 
 
