@@ -9,6 +9,7 @@ import pandas as pd
 from scipy.spatial.distance import pdist, squareform
 from scipy.ndimage import zoom
 from scipy.stats import pearsonr
+import matplotlib.pyplot as plt
 
 def data_load(dcm_folder):
     dicoms_data = []
@@ -41,6 +42,20 @@ def mask_self_defined(subject_data, threshold_scale=1.3):
     thresholds = threshold_scale * np.mean(mean_slices, axis=(1, 2), keepdims=True)
     binary_mask_array = (mean_slices > thresholds).astype(int)
     mask_3d = label(binary_mask_array)
+
+    plot_mask_flag = False
+    if plot_mask_flag == True:
+        fig, axs = plt.subplots(6, 7, figsize=(8, 8))
+        for i, ax in enumerate(axs.flat):
+            ax.imshow(label(binary_mask_array[i]), cmap='viridis')
+            ax.set_title(f'Slice {i + 1}',fontsize=10)
+            ax.axis('off')
+            cax = ax.imshow(label(binary_mask_array[i]), cmap='viridis')
+            cbar = fig.colorbar(cax, ax=ax, orientation='vertical', fraction=0.046, pad=0.04)
+            cbar.ax.tick_params(labelsize=8)
+        plt.tight_layout()
+        plt.savefig('mask.pdf', format='pdf', bbox_inches='tight')
+        plt.show()
     return mask_3d
 
 def get_time_series(subject_data,mask_3d):
@@ -146,7 +161,7 @@ def calculate_rdc(data):
 
 
 def QA_metrics_for_single_subject(subject_data: np.ndarray)-> dict:
-    mask_3d = mask_self_defined(subject_data, threshold_scale=1.8)
+    mask_3d = mask_self_defined(subject_data, threshold_scale=1.5)
     roi_signal = get_time_series(subject_data, mask_3d)
 
     for idx in range(subject_data.shape[0]):
@@ -229,9 +244,17 @@ def QA_metrics_for_SV2A_data(root_dir):
     df = pd.DataFrame(results)
     df.to_csv(output_csv_path, mode='w', header= True, index=False)
 
+def fmri_bold_scan():
+    # folder = '/Users/siyac/Documents/_万能班长/_code/QAM_master_thesis/fmri_small'
+    folder = '/Users/siyac/Documents/_万能班长/_code/QAM_master_thesis/fMRI-BOLD-scan'
+    subject_data = data_load(folder)
+
+    QA_metrics_dict = QA_metrics_for_single_subject(subject_data)
+
+
 
 if __name__ == '__main__':
-    root_dir = 'SV2A-study-partI'
-    QA_metrics_for_SV2A_data(root_dir)
-
+    # root_dir = 'SV2A-study-partI'
+    # QA_metrics_for_SV2A_data(root_dir)
     # QA_metrics_for_nilearn_data()
+    fmri_bold_scan()
