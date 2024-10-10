@@ -58,13 +58,18 @@ def plot_metric_for_slice_compare(good_QA_metric, bad_QA_metric,QA_metric_name):
     for i in range(good_QA_metric.shape[0]):
         fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
-        axes[0].imshow(good_QA_metric[i], cmap='viridis', interpolation='nearest')
+        im1 = axes[0].imshow(good_QA_metric[i], cmap='viridis', interpolation='nearest')
         axes[0].set_title('Good '+QA_metric_name+f'in slice {i + 1}', fontsize=10)
         axes[0].axis('off')
+        cbar1 = plt.colorbar(im1, ax=axes[0], orientation='vertical', shrink=0.8)
+        cbar1.set_label(QA_metric_name, rotation=270, labelpad=15)
 
-        axes[1].imshow(bad_QA_metric[i], cmap='viridis', interpolation='nearest')
+        im2 = axes[1].imshow(bad_QA_metric[i], cmap='viridis', interpolation='nearest')
         axes[1].set_title('Bad '+QA_metric_name+f'in slice {i + 1}')
         axes[1].axis('off')
+        cbar2 = plt.colorbar(im2, ax=axes[1], orientation='vertical', shrink=0.8)
+        cbar2.set_label(QA_metric_name, rotation=270, labelpad=15)
+
         plt.suptitle('Comparison of '+QA_metric_name, fontsize=16)
         plt.tight_layout()
         file_name = QA_metric_name+f'_slice_{i + 1}'+'.pdf'

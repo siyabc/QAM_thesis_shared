@@ -70,13 +70,6 @@ def get_time_series(subject_data, mask_3d):
     return roi_signal
 
 
-def calculate_voxelwise_sfnr(time_series):
-    mean_signal = np.mean(time_series, axis=0)
-    detrended_data = signal.detrend(time_series)
-    std_signal = np.std(detrended_data, axis=0)
-    sfnr = mean_signal / std_signal
-    return sfnr
-
 
 def calculate_voxelwise_sfnr_res3D(subject_data):
     mean_signal = np.mean(subject_data, axis=0)
@@ -84,14 +77,6 @@ def calculate_voxelwise_sfnr_res3D(subject_data):
     std_signal = np.std(detrended_data, axis=0)
     sfnr = np.where(std_signal != 0, mean_signal / std_signal, 0)
     return sfnr
-
-
-def calculate_voxelwise_snr(time_series):
-    mean_signal = np.mean(time_series, axis=0)
-    std_signal = np.std(time_series, axis=0)
-    non_zero_std_indices = std_signal != 0
-    snr = mean_signal[non_zero_std_indices] / std_signal[non_zero_std_indices]
-    return snr
 
 
 def calculate_voxelwise_snr_res3D(subject_data):
@@ -148,14 +133,6 @@ def calculate_perAF_res3D(subject):
     res = np.where(mean_signal != 0, diff / mean_signal, 0) * 100
     perAF = np.mean(res, axis=0)
     return perAF
-
-
-def calculate_perAF(signal):
-    mean_signal = np.mean(signal, axis=0)
-    diff = abs(signal - mean_signal.reshape(1, len(mean_signal)))
-    perAF = np.mean(diff / mean_signal) * 100
-    return perAF
-
 
 def correlate_fft(x, y):
     # 基于傅立叶变换计算两个信号的相关性系数
