@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 from QAM_with_masks_v2 import data_load, QA_metrics_for_single_subject_res3D
-
+from matplotlib.colors import LinearSegmentedColormap
 
 def box_plot(csv_path):
     data = pd.read_csv(csv_path)
@@ -56,15 +56,19 @@ def plot_metric_for_slice_compare(good_QA_metric, bad_QA_metric,QA_metric_name):
         os.makedirs(folder_path)
 
     for i in range(good_QA_metric.shape[0]):
+        colors = ["lightgray","blue", "yellow","orange", "red"]
+        cmap = LinearSegmentedColormap.from_list("custom_cmap", colors, N=256)
+        vmin = good_QA_metric[i].min()
+        vmax = good_QA_metric[i].max()
         fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
-        im1 = axes[0].imshow(good_QA_metric[i], cmap='viridis', interpolation='nearest')
+        im1 = axes[0].imshow(good_QA_metric[i], cmap=cmap,alpha=0.7, interpolation='nearest',vmin=vmin, vmax=vmax)
         axes[0].set_title('Good '+QA_metric_name+f'in slice {i + 1}', fontsize=10)
         axes[0].axis('off')
         cbar1 = plt.colorbar(im1, ax=axes[0], orientation='vertical', shrink=0.8)
         cbar1.set_label(QA_metric_name, rotation=270, labelpad=15)
 
-        im2 = axes[1].imshow(bad_QA_metric[i], cmap='viridis', interpolation='nearest')
+        im2 = axes[1].imshow(bad_QA_metric[i], cmap=cmap,alpha=0.7, interpolation='nearest',vmin=vmin, vmax=vmax)
         axes[1].set_title('Bad '+QA_metric_name+f'in slice {i + 1}')
         axes[1].axis('off')
         cbar2 = plt.colorbar(im2, ax=axes[1], orientation='vertical', shrink=0.8)
@@ -82,6 +86,7 @@ def QA_metrics_res_compare_plot(good_subject_dcm_folder, bad_subject_dcm_folder)
     bad_QA_metrics = QA_metrics_for_single_subject_res3D(bad_subject_data)
 
     for QA_metric_name in good_QA_metrics.keys():
+    # for QA_metric_name in ['snr']:
         print('QA_metric_name:',QA_metric_name)
         plot_metric_for_slice_compare(good_QA_metrics[QA_metric_name], bad_QA_metrics[QA_metric_name],QA_metric_name)
 
