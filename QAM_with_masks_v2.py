@@ -43,31 +43,29 @@ def data_load(dcm_folder):
 
 
 def mask_self_defined(subject_data, threshold_scale=1.3):
+    max_value = np.max(subject_data)
     mean_slices = np.mean(subject_data, axis=0)
     thresholds = threshold_scale * np.mean(mean_slices, axis=(1, 2), keepdims=True)
-    binary_mask_array = (mean_slices > thresholds).astype(int)
-    mask_3d = label(binary_mask_array)
+    mask_3d = np.where(mean_slices < thresholds, 0, mean_slices / max_value)
+
+    # binary_mask_array = (mean_slices > thresholds).astype(int)
+    # mask_3d = label(binary_mask_array)
 
     plot_mask_flag = False
     if plot_mask_flag == True:
         fig, axs = plt.subplots(6, 7, figsize=(8, 8))
         for i, ax in enumerate(axs.flat):
-            ax.imshow(label(binary_mask_array[i]), cmap='viridis')
+            ax.imshow(mask_3d[i], cmap='viridis',vmin=0, vmax=1)
             ax.set_title(f'Slice {i + 1}', fontsize=10)
             ax.axis('off')
-            cax = ax.imshow(label(binary_mask_array[i]), cmap='viridis')
-            cbar = fig.colorbar(cax, ax=ax, orientation='vertical', fraction=0.046, pad=0.04)
-            cbar.ax.tick_params(labelsize=8)
+            # cax = ax.imshow(mask_3d[i], cmap='viridis',vmin=0, vmax=1)
+            # cbar = fig.colorbar(cax, ax=ax, orientation='vertical', fraction=0.046, pad=0.04)
+            # cbar.ax.tick_params(labelsize=8)
         plt.tight_layout()
-        plt.savefig('mask.pdf', format='pdf', bbox_inches='tight')
+        plt.savefig('subject_mask.pdf', format='pdf', bbox_inches='tight')
         plt.show()
     return mask_3d
 
-
-def get_time_series(subject_data, mask_3d):
-    indices = np.where(mask_3d > 0)
-    roi_signal = subject_data[:, indices[0], indices[1], indices[2]]
-    return roi_signal
 
 
 
@@ -310,7 +308,6 @@ def calculate_signal_homogeneity(image):
 
 def QA_metrics_for_single_subject(subject_data: np.ndarray) -> dict:
     mask_3d = mask_self_defined(subject_data, threshold_scale=1.5)
-    roi_signal = get_time_series(subject_data, mask_3d)
 
     for idx in range(subject_data.shape[0]):
         subject_data[idx][mask_3d == 0] = 0
@@ -318,6 +315,7 @@ def QA_metrics_for_single_subject(subject_data: np.ndarray) -> dict:
     # calculate QA metrics for each subject
     snr = np.mean(calculate_voxelwise_snr_res3D(subject_data))
     sfnr = np.mean(calculate_voxelwise_sfnr_res3D(subject_data))
+
     fwhm_space = calculate_fwhm_4d(subject_data)
     fwhm_time = np.mean(calculate_fwhm_res3D(subject_data))
     perAF = np.mean(calculate_perAF_res3D(subject_data))
@@ -352,7 +350,6 @@ def QA_metrics_for_single_subject(subject_data: np.ndarray) -> dict:
 
 def QA_metrics_for_single_subject_res3D(subject_data: np.ndarray) -> dict:
     mask_3d = mask_self_defined(subject_data, threshold_scale=1.5)
-    roi_signal = get_time_series(subject_data, mask_3d)
 
     for idx in range(subject_data.shape[0]):
         subject_data[idx][mask_3d == 0] = 0
@@ -451,14 +448,15 @@ def QA_metrics_for_SV2A_data(root_dir):
 
 
 def fmri_bold_scan():
-    folder = './fmri_small'
+    folder = './fMRI-BOLD-scan'
     subject_data = data_load(folder)
-    QA_metrics_dict = QA_metrics_for_single_subject_res3D(subject_data)
-    # QA_metrics_dict = QA_metrics_for_single_subject(subject_data)
+    # QA_metrics_dict = QA_metrics_for_single_subject_res3D(subject_data)
+    QA_metrics_dict = QA_metrics_for_single_subject(subject_data)
 
 
 if __name__ == '__main__':
-    root_dir = 'SV2A-study-partI'
+    # root_dir = 'SV2A-study-partI'
+    root_dir = 'SV2A-study-part2'
     QA_metrics_for_SV2A_data(root_dir)
     # QA_metrics_for_nilearn_data()
     # fmri_bold_scan()
