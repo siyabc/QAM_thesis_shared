@@ -43,25 +43,23 @@ def data_load(dcm_folder):
 
 
 def mask_self_defined(subject_data, threshold_scale=1.3):
-    max_value = np.max(subject_data)
+    # max_value = np.max(subject_data)
     mean_slices = np.mean(subject_data, axis=0)
     thresholds = threshold_scale * np.mean(mean_slices, axis=(1, 2), keepdims=True)
-    mask_3d = np.where(mean_slices < thresholds, 0, mean_slices / max_value)
+    # mask_3d = np.where(mean_slices < thresholds, 0, mean_slices / max_value)
+    mask_3d = np.where(mean_slices < thresholds, 0, 1)
 
     # binary_mask_array = (mean_slices > thresholds).astype(int)
     # mask_3d = label(binary_mask_array)
 
-    plot_mask_flag = False
+    plot_mask_flag = True
     if plot_mask_flag == True:
         fig, axs = plt.subplots(6, 7, figsize=(8, 8))
         for i, ax in enumerate(axs.flat):
-            ax.imshow(mask_3d[i], cmap='viridis',vmin=0, vmax=1)
-            ax.set_title(f'Slice {i + 1}', fontsize=10)
+            ax.imshow(mask_3d[i], cmap='gray', vmin=0, vmax=1)
+            # ax.set_title(f'Slice {i + 1}', fontsize=10)
             ax.axis('off')
-            # cax = ax.imshow(mask_3d[i], cmap='viridis',vmin=0, vmax=1)
-            # cbar = fig.colorbar(cax, ax=ax, orientation='vertical', fraction=0.046, pad=0.04)
-            # cbar.ax.tick_params(labelsize=8)
-        plt.tight_layout()
+        plt.subplots_adjust(hspace=-0.5, wspace=0.)
         plt.savefig('subject_mask.pdf', format='pdf', bbox_inches='tight')
         plt.show()
     return mask_3d
