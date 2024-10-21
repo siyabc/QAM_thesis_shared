@@ -130,29 +130,27 @@ def calculate_rdc(data):
             for k in range(j + 1, target_size * target_size):
                 voxel1 = downsampled_image[:, j // target_size, j % target_size]
                 voxel2 = downsampled_image[:, k // target_size, k % target_size]
-                if np.all(voxel1 == 0) or np.all(voxel2 == 0):
-                    correlations.append((j, k, 0, spatial_distances[j, k]))
-                    continue
                 correlation = np.corrcoef(voxel1, voxel2)
+                correlation[np.isnan(correlation)] = 0
                 correlations.append((j, k, abs(correlation[0, 1]), spatial_distances[j, k]))
         correlations = np.array(correlations)
         correlations = correlations[correlations[:, 2].argsort(axis=0)]
 
-        '''
+
         ## Another method to calculate rdc for each slice
         # 遍历每个体素点
-        radius_of_decorrelation_slice = []
-        for i in range(downsampled_image.shape[0] * downsampled_image.shape[1]):
-            mask = (correlations[:, 0] == i) | (correlations[:, 1] == i)
-            voxel_correlations = correlations[mask]
-            mask = voxel_correlations[:, 2] < corr_threshold
-            if np.any(mask):
-                min_distance = np.min(voxel_correlations[mask, 3])
-            else:
-                min_distance = np.nan
-            radius_of_decorrelation_slice.append(min_distance)
-        radius_of_decorrelation.append(np.nanmean(radius_of_decorrelation_slice))
-        '''
+        # radius_of_decorrelation_slice = []
+        # for i in range(downsampled_image.shape[0] * downsampled_image.shape[1]):
+        #     mask = (correlations[:, 0] == i) | (correlations[:, 1] == i)
+        #     voxel_correlations = correlations[mask]
+        #     mask = voxel_correlations[:, 2] < corr_threshold
+        #     if np.any(mask):
+        #         min_distance = np.min(voxel_correlations[mask, 3])
+        #     else:
+        #         min_distance = 1
+        #     radius_of_decorrelation_slice.append(min_distance)
+        # radius_of_decorrelation.append(np.nanmean(radius_of_decorrelation_slice))
+
 
         # 找到decorrelation半径
         radius_of_decorrelation.append(np.interp(corr_threshold, correlations[:, 2], correlations[:, 3]))
@@ -252,7 +250,7 @@ def fmri_bold_scan():
 
 
 if __name__ == '__main__':
-    # root_dir = 'SV2A-study-partI'
-    # QA_metrics_for_SV2A_data(root_dir)
+    root_dir = 'SV2A-study-part2'
+    QA_metrics_for_SV2A_data(root_dir)
     # QA_metrics_for_nilearn_data()
-    fmri_bold_scan()
+    # fmri_bold_scan()
