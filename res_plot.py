@@ -7,8 +7,8 @@ from matplotlib.colors import LinearSegmentedColormap
 
 def box_plot(csv_path):
     data = pd.read_csv(csv_path)
-    data_to_plot = data.iloc[:, 1:]
-    # data_to_plot = data.iloc[:, -5:]
+    # data_to_plot = data.iloc[:, 1:]
+    data_to_plot = data.iloc[:, -1:]
     plt.figure(figsize=(10, 6))
     data_to_plot.boxplot()
     plt.xticks(rotation=45)
@@ -95,7 +95,8 @@ def QA_metrics_res_compare_plot(good_subject_dcm_folder, bad_subject_dcm_folder)
 
 if __name__ == '__main__':
 
-    # csv_path = "SV2A-study-partI_QA_metrics.csv"
+    csv_path = "SV2A-study-partI_QA_metrics.csv"
+    # csv_path ="SV2A-study-part2_QA_metrics.csv"
     # csv_path = "nilearn_data_QA_metrics.csv"
 
     # csv_path = "SV2A-study-partI_acf_fwhm.csv"
@@ -103,8 +104,8 @@ if __name__ == '__main__':
 
     # csv_path  = "SV2A-study-part2_acf_fwhm_G.csv"
 
-    csv_path  = "SV2A-study-partI_fitting_fwhm_G.csv"
-
+    # csv_path  = "SV2A-study-part2_fitting_fwhm_G.csv"
+    #
     box_plot(csv_path)
     #===============================================
 
@@ -112,6 +113,8 @@ if __name__ == '__main__':
     # bad_subject_dcm_folder = 'SV2A-study-partI/014/45-BOLD_-_N-Back'
     # good_subject_dcm_folder = 'SV2A-study-part2/019/34-BOLD_-_N-Back'
     # bad_subject_dcm_folder = 'SV2A-study-partI/014/45-BOLD_-_N-Back'
+    # good_subject_dcm_folder = 'SV2A-study-partI/065/33-BOLD_-_Switching'
+    # bad_subject_dcm_folder = 'SV2A-study-partI/065/35-BOLD_-_Switching'
     # QA_metric_all_slices_singel_subject_plot(bad_subject_dcm_folder)
     # QA_metrics_res_compare_plot(good_subject_dcm_folder, bad_subject_dcm_folder)
 

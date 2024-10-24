@@ -14,7 +14,24 @@ df2 = df2.iloc[:, 1:]
 df2 = df2.fillna(0)
 df2 = df2.replace([np.inf, -np.inf], 0)
 
-df = pd.concat([df1, df2], axis=0, ignore_index=True)
+
+df3 = pd.read_csv('SV2A-study-partI_acf_fwhm_mixture.csv')
+df3 = df3.iloc[:, 1:]
+df4 = pd.read_csv('SV2A-study-part2_acf_fwhm_mixture.csv')
+df4 = df4.iloc[:, 1:]
+
+# df11 = pd.concat([df1, df2], axis=0, ignore_index=True)
+# df22 = pd.concat([df3, df4], axis=0, ignore_index=True)
+# df = pd.concat([df11, df22], axis=1, ignore_index=True)
+
+M = pd.concat([df1, df3], axis=1)
+
+# 第二步：将 C 和 D 按列方向合并成 N
+N = pd.concat([df2, df4], axis=1)
+
+# 第三步：将 M 和 N 按行方向合并成 X
+df = pd.concat([M, N], axis=0)
+
 
 scaler = StandardScaler()
 scaled_data = scaler.fit_transform(df)

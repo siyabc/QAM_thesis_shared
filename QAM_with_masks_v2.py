@@ -12,7 +12,7 @@ from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter, uniform_filter, median_filter
 import cv2
-
+from numpy.polynomial.legendre import Legendre
 
 def data_load(dcm_folder):
     dicoms_data = []
@@ -43,11 +43,11 @@ def data_load(dcm_folder):
 
 
 def mask_self_defined(subject_data, threshold_scale=1.3):
-    # max_value = np.max(subject_data)
+    max_value = np.max(subject_data)
     mean_slices = np.mean(subject_data, axis=0)
     thresholds = threshold_scale * np.mean(mean_slices, axis=(1, 2), keepdims=True)
-    # mask_3d = np.where(mean_slices < thresholds, 0, mean_slices / max_value)
-    mask_3d = np.where(mean_slices < thresholds, 0, 1)
+    mask_3d = np.where(mean_slices < thresholds, 0, mean_slices / max_value)
+    # mask_3d = np.where(mean_slices < thresholds, 0, 1)
 
     # binary_mask_array = (mean_slices > thresholds).astype(int)
     # mask_3d = label(binary_mask_array)
@@ -65,11 +65,24 @@ def mask_self_defined(subject_data, threshold_scale=1.3):
     return mask_3d
 
 
-
+def detrending_signal(subject_data):
+    time = subject_data.shape[0]
+    slice_num = subject_data.shape[1]
+    row = subject_data.shape[2]
+    column = subject_data.shape[3]
+    detrended_signal = np.zeros((time,slice_num,row,column))
+    for i in range(slice_num):
+        for j in range(row):
+            for h in range(column):
+                p = Legendre.basis(2).fit(range(time), subject_data[:,i,j,h], 2)
+                trend = p(range(time))
+                detrended_signal[:,i,j,h] = subject_data[:,i,j,h] - trend
+    return detrended_signal
 
 def calculate_voxelwise_sfnr_res3D(subject_data):
     mean_signal = np.mean(subject_data, axis=0)
-    detrended_data = signal.detrend(subject_data, axis=0)
+    # detrended_data = signal.detrend(subject_data, axis=0)
+    detrended_data = detrending_signal(subject_data)
     std_signal = np.std(detrended_data, axis=0)
     sfnr = np.where(std_signal != 0, mean_signal / std_signal, 0)
     return sfnr
@@ -193,7 +206,7 @@ def autocorrelation(signal):
     return autocorr / (c0 * np.arange(n, 0, -1))
 
 
-def calculate_rdc_res3D(subject, threshold=0.1):
+def calculate_rdc_res3D(subject, threshold=0.5):
     rdc_results = np.zeros((subject.shape[1], subject.shape[2], subject.shape[3]))
     for i in range(subject.shape[1]):
         for j in range(subject.shape[2]):
